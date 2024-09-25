@@ -12,6 +12,7 @@ import (
 
 	"github.com/fsidiqs/aegis-backend/handler/authhandler"
 	"github.com/fsidiqs/aegis-backend/handler/middleware"
+	"github.com/fsidiqs/aegis-backend/handler/organizationhandler"
 	"github.com/fsidiqs/aegis-backend/handler/userhandler"
 	"github.com/fsidiqs/aegis-backend/service/tokenservice"
 
@@ -35,6 +36,7 @@ func inject(d *db.DataSources, m *mailer) (*gin.Engine, error) {
 	// repository layer
 	//
 	userRepository := repository.NewUserRepository(d.DB)
+	organizationRepository := repository.NewOrganizationRepository(d.DB)
 	// redisRepository := repository.NewRedisRepository(d.RedisClient)
 	// programRepository := repository.NewProgramRepository(d.DB)
 	// subscriptionRepository := repository.NewSubscriptionRepository(d.DB)
@@ -78,6 +80,10 @@ func inject(d *db.DataSources, m *mailer) (*gin.Engine, error) {
 		return nil, fmt.Errorf("could not parse OTP_EXP as int: %v", err)
 	}
 
+	orgService := service.NewOrganizationService(&service.OSConfig{
+		OrganizationRepository: organizationRepository,
+	})
+
 	//---------- userService
 	userService := service.NewUserService(
 		&service.USConfig{
@@ -94,6 +100,7 @@ func inject(d *db.DataSources, m *mailer) (*gin.Engine, error) {
 			},
 		},
 	)
+
 	//---------- activityLogService
 	// activityLogService := service.NewActivityLogService(&service.ActivityLogServiceConfig{
 	// 	ActivityLogRepository: activityLogRepository,
@@ -210,6 +217,14 @@ func inject(d *db.DataSources, m *mailer) (*gin.Engine, error) {
 		BaseURL: baseURL,
 		// FirebaseAuth:            fAuthClient,
 		// Log:                     baseLogger,
+	})
+
+	organizationhandler.NewHandler(&organizationhandler.Config{
+		R:                   router,
+		OrganizationService: orgService,
+		UserService:         userService,
+		TokenService:        tokenService,
+		BaseURL:             baseURL,
 	})
 
 	//------------- Program Service

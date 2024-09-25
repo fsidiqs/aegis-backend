@@ -38,13 +38,14 @@ type (
 	TRole         string
 	TGender       string
 	User          struct {
-		ID              uuid.UUID  `gorm:"primary_key; unique; type:uuid; column:id; not null; default:uuid_generate_v4()" json:"id"`
-		Role            TRole      `json:"role"`
-		Name            string     `json:"name"`
-		Email           string     `json:"email"`
-		Password        string     `json:"-"`
-		EmailVerifiedAt *time.Time `json:"-"`
-		LastLoginMethod string     `json:"last_login_method"`
+		ID              uuid.UUID       `gorm:"primary_key; unique; type:uuid; column:id; not null; default:uuid_generate_v4()" json:"id"`
+		Role            TRole           `json:"role"`
+		Name            string          `json:"name"`
+		Email           string          `json:"email"`
+		Password        string          `json:"-"`
+		EmailVerifiedAt *time.Time      `json:"-"`
+		LastLoginMethod string          `json:"last_login_method"`
+		Organizations   []*Organization `gorm:"many2many:users_organizations;"`
 
 		DefaultColumns
 	}

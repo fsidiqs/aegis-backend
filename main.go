@@ -52,7 +52,7 @@ func main() {
 	defer ds.Close()
 
 	fmt.Println("Migrating data sources")
-	err = ds.DB.AutoMigrate(&model.User{}, &model.UserSession{})
+	err = ds.DB.AutoMigrate(&model.User{}, &model.UserSession{}, &model.Organization{})
 	if err != nil {
 		log.Fatalf("Unable to migrate data sources: %v\n", err)
 	}
