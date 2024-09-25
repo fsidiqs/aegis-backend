@@ -12,6 +12,8 @@ import (
 // any service it interacts with to implement
 type IUserService interface {
 	Get(ctx context.Context, uid uuid.UUID) (*model.User, error)
+	List(ctx context.Context) ([]model.User, error)
+	HardDelete(ctx context.Context, uid uuid.UUID) error
 	GetByEmail(ctx context.Context, email string) (*model.User, error)
 	Register(ctx context.Context, u model.User) (*model.User, *model.OTPData, error)
 	// StoreFromSocialLogin(ctx context.Context, name, nickname, email, gender string) (*model.User, error)

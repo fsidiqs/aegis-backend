@@ -10,7 +10,6 @@ import (
 	"github.com/fsidiqs/aegis-backend/model"
 	"github.com/fsidiqs/aegis-backend/model/apperror"
 	"github.com/google/uuid"
-	"github.com/kr/pretty"
 
 	"gorm.io/gorm"
 )
@@ -43,6 +42,23 @@ func (r *psqlUserRepository) Create(ctx context.Context, u model.User) (*model.U
 	return &u, nil
 }
 
+// List returns all users
+func (r *psqlUserRepository) List(ctx context.Context) ([]model.User, error) {
+	var dbContext *gorm.DB
+	// get db from context, if db doesnt exists then use the class db
+
+	dbContext = r.DB
+
+	var users []model.User
+	err := dbContext.WithContext(ctx).Where(queryhelper.ActiveFlag).
+		Find(&users).Error
+	if err != nil {
+		errMsg := fmt.Sprintf("%s", helper.TraceCurrentFuncArgs(nil))
+		return nil, apperror.NewRepoErrorMsg(err, errMsg)
+	}
+	return users, nil
+}
+
 func (r *psqlUserRepository) FindByID(ctx context.Context, uid uuid.UUID) (*model.User, error) {
 	var u model.User
 	var dbContext *gorm.DB
@@ -63,8 +79,6 @@ func (r *psqlUserRepository) FindByID(ctx context.Context, uid uuid.UUID) (*mode
 		), err)
 		return nil, apperror.NewRepoErrorMsg(err, errMsg)
 	}
-	pretty.Println("testing", u)
-	pretty.Println()
 	return &u, nil
 }
 
@@ -89,6 +103,30 @@ func (r *psqlUserRepository) FindByEmail(ctx context.Context, email string) (*mo
 	}
 
 	return u, nil
+}
+
+// soft delete user
+func (r *psqlUserRepository) HardDeleteUser(ctx context.Context, uid uuid.UUID) error {
+	var dbContext *gorm.DB
+	// get db from context, if db doesnt exists then use the class db
+	u := model.UserRecordFlagUpdate{
+		RecordFlag: model.RecDeleted,
+	}
+
+	dbContext = r.DB
+
+	err := dbContext.WithContext(ctx).
+		Where("id = ?", uid).
+		Delete(&u).Error
+	if err != nil {
+		errMsg := fmt.Sprintf("%s", helper.TraceCurrentFuncArgs(
+			map[string]string{
+				"user_id": uid.String(),
+			},
+		))
+		return apperror.NewRepoErrorMsg(err, errMsg)
+	}
+	return nil
 }
 
 // func (r *psqlUserRepository) FindByEmailAndPhone(ctx context.Context, email string, phone string) (*model.User, error) {

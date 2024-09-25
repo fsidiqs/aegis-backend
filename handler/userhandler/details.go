@@ -118,3 +118,89 @@ func (h *HandlerImpl) Details() gin.HandlerFunc {
 		}
 	})
 }
+
+func (h *HandlerImpl) ListUsers() gin.HandlerFunc {
+	return handler.HandlerResolver(func(c *gin.Context) handler.HandlerResponse {
+		ctx := c.Request.Context()
+		uFetched, err := h.UserService.List(ctx)
+		if err != nil {
+			_, errResp, apperr := appresponse.PrepareErr(err, helper.TraceCurrentFuncArgs(map[string]string{}))
+			sc := http.StatusInternalServerError
+
+			if apperr.Type == apperror.BadRequest || apperr.Type == apperror.NotFound {
+				sc = http.StatusBadRequest
+				errResp = appresponse.HdlRespBadRequest()
+			} else {
+				sc = http.StatusInternalServerError
+				errResp = appresponse.HdlRespInternalServerError()
+			}
+
+			return handler.HandlerResponse{
+				ResponseWrapper: appresponse.ResponseWrapper{
+					StatusCode: sc,
+					Response:   errResp,
+				}, Ok: false,
+			}
+		}
+
+		return handler.HandlerResponse{
+			ResponseWrapper: appresponse.ResponseWrapper{
+				StatusCode: http.StatusOK,
+				Response:   appresponse.SuccessResponse{Data: uFetched, Type: appresponse.THdlSuccess, Message: appresponse.HdlMsgSuccess},
+			}, Ok: true,
+		}
+	})
+}
+
+// HardDelete User
+// @Summary Handling request from the client to perform hard delete user
+// @Tags userDelete
+// @Accept json
+func (h *HandlerImpl) HardDeleteUser() gin.HandlerFunc {
+	return handler.HandlerResolver(func(c *gin.Context) handler.HandlerResponse {
+		userIDParam := c.Param("user_id")
+
+		userID, err := uuid.Parse(userIDParam)
+		if err != nil {
+			// errMsg := fmt.Sprintf("%s: failed parse user-uuid :%v", helper.TraceCurrentFunc(), userIDParam)
+			return handler.HandlerResponse{
+				ResponseWrapper: appresponse.ResponseWrapper{
+					StatusCode: http.StatusInternalServerError,
+					Response:   appresponse.ErrorResponse{Type: appresponse.THdlBadRequest, Message: "failed parse user-uuid"},
+				},
+				Ok: false,
+			}
+		}
+
+		ctx := c.Request.Context()
+		err = h.UserService.HardDelete(ctx, userID)
+		if err != nil {
+			_, errResp, apperr := appresponse.PrepareErr(err, helper.TraceCurrentFuncArgs(map[string]string{
+				"user_id": userID.String(),
+			}))
+			sc := http.StatusInternalServerError
+
+			if apperr.Type == apperror.BadRequest || apperr.Type == apperror.NotFound {
+				sc = http.StatusBadRequest
+				errResp = appresponse.HdlRespBadRequest()
+			} else {
+				sc = http.StatusInternalServerError
+				errResp = appresponse.HdlRespInternalServerError()
+			}
+
+			return handler.HandlerResponse{
+				ResponseWrapper: appresponse.ResponseWrapper{
+					StatusCode: sc,
+					Response:   errResp,
+				}, Ok: false,
+			}
+		}
+
+		return handler.HandlerResponse{
+			ResponseWrapper: appresponse.ResponseWrapper{
+				StatusCode: http.StatusOK,
+				Response:   appresponse.SuccessResponse{Data: nil, Type: appresponse.THdlSuccess, Message: appresponse.HdlMsgSuccess},
+			}, Ok: true,
+		}
+	})
+}

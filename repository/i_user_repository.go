@@ -29,5 +29,8 @@ type IUserRepository interface {
 	UpsertOTP(ctx context.Context, userID string, uOTP model.UserOTP) error
 	UpdateOTP(ctx context.Context, uOTPID uuid.UUID, userOTP model.UserOTPUpdate) error
 
+	HardDeleteUser(ctx context.Context, uid uuid.UUID) error
+	List(ctx context.Context) ([]model.User, error)
+
 	// IsSubscribing(ctx context.Context, userID uuid.UUID) (bool, error)
 }

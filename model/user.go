@@ -149,6 +149,15 @@ func (UserPasswordUpdate) TableName() string {
 	return "users"
 }
 
+type UserRecordFlagUpdate struct {
+	RecordFlag TRecordFlag `json:"record_flag"`
+}
+
+// required by GORMFramework
+func (UserRecordFlagUpdate) TableName() string {
+	return "users"
+}
+
 // REQUEST DATA
 
 type UserRegisterReq struct {

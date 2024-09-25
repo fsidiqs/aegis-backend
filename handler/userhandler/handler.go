@@ -85,10 +85,12 @@ func NewHandler(c *Config) {
 	g.POST("/user", h.Register())
 	g.PUT("/user", authmiddleware.AuthUser(), h.UpdateMyDetails())
 	g.GET("/user", authmiddleware.AuthUser(), h.MyDetails())
+	g.GET("/users", authmiddleware.AuthUser(), h.ListUsers())
 	// g.POST("/user/resend-verification", h.ResendEmailVerification)
 
 	g.GET("/user/:user_id", authmiddleware.AuthUser(), h.Details())
 	g.PUT("/user/:user_id", authmiddleware.AuthUser(), h.UpdateDetails())
+	g.DELETE("/user/:user_id", authmiddleware.AuthUser(), h.HardDeleteUser())
 
 	// g.POST("/user/verify-email-by-otp", authPublicMid.AuthPublic(), h.VerifyEmailByOTP)
 	g.POST("/user/forgot-password", h.ForgotPasswordByEmail)

@@ -52,6 +52,15 @@ func (s *userService) Get(ctx context.Context, uid uuid.UUID) (*model.User, erro
 	return s.UserRepository.FindByID(ctx, uid)
 }
 
+func (s *userService) List(ctx context.Context) ([]model.User, error) {
+	return s.UserRepository.List(ctx)
+}
+
+// HardDelete User
+func (s *userService) HardDelete(ctx context.Context, uid uuid.UUID) error {
+	return s.UserRepository.HardDeleteUser(ctx, uid)
+}
+
 func (s *userService) GetByEmail(ctx context.Context, email string) (*model.User, error) {
 	return s.UserRepository.FindByEmail(ctx, email)
 }
