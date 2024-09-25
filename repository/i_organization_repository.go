@@ -15,4 +15,5 @@ type IOrganizationRepository interface {
 	FindByID(ctx context.Context, id uuid.UUID) (*model.Organization, error)
 	HardDelete(ctx context.Context, id uuid.UUID) error
 	List(ctx context.Context) ([]model.Organization, error)
+	ListWhereCreatorID(ctx context.Context, creatorID uuid.UUID) ([]model.Organization, error)
 }

@@ -38,6 +38,10 @@ func (s *organizationService) List(ctx context.Context) ([]model.Organization, e
 	return s.OrganizationRepository.List(ctx)
 }
 
+func (s *organizationService) ListWhereCreatorID(ctx context.Context, creatorID uuid.UUID) ([]model.Organization, error) {
+	return s.OrganizationRepository.ListWhereCreatorID(ctx, creatorID)
+}
+
 // HardDelete User
 func (s *organizationService) HardDelete(ctx context.Context, uid uuid.UUID) error {
 	return s.OrganizationRepository.HardDelete(ctx, uid)
@@ -59,8 +63,8 @@ func (s *organizationService) Create(ctx context.Context, u model.Organization, 
 	return userCreated, nil
 }
 
-func (s *organizationService) Update(ctx context.Context, uid uuid.UUID, orgUpdate *model.Organization) error {
-	return s.OrganizationRepository.Update(ctx, uid, orgUpdate)
+func (s *organizationService) Update(ctx context.Context, orgID uuid.UUID, orgUpdate *model.Organization, userID uuid.UUID) error {
+	return s.OrganizationRepository.Update(ctx, orgID, orgUpdate)
 }
 
 // func (s *userService) StoreFromSocialLogin(ctx context.Context, socialName, nickname, socialEmail, gender string) (*model.User, error) {

@@ -11,7 +11,6 @@ import (
 	"github.com/fsidiqs/aegis-backend/model/appresponse"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/kr/pretty"
 )
 
 func (h *HandlerImpl) Update() gin.HandlerFunc {
@@ -91,19 +90,30 @@ func (h *HandlerImpl) Update() gin.HandlerFunc {
 
 		}
 
-		if getUser.Role != model.TSUPERADMIN && getUser.ID != currUID {
-			pretty.Println("getUser.Role: ", getUser)
-			pretty.Println("getUser.ID: ", getUser.ID)
-			return handler.HandlerResponse{
-				Ctx: reqCtx,
-				ResponseWrapper: appresponse.ResponseWrapper{
-					StatusCode: http.StatusForbidden,
-					Response:   appresponse.ErrorResponse{Message: "forbidden access"},
-				}, TrxKeys: trxKeys, Ok: false,
+		if getUser.Role != model.TSUPERADMIN {
+			org, err := h.OrganizationService.Get(reqCtx, orgID)
+			if err != nil {
+				return handler.HandlerResponse{
+					Ctx: reqCtx,
+					ResponseWrapper: appresponse.ResponseWrapper{
+						StatusCode: http.StatusNotFound,
+						Response:   appresponse.ErrorResponse{Message: "organization not found"},
+					}, TrxKeys: trxKeys, Ok: false,
+				}
+			}
+
+			if org.CreatorID != getUser.ID {
+				return handler.HandlerResponse{
+					Ctx: reqCtx,
+					ResponseWrapper: appresponse.ResponseWrapper{
+						StatusCode: http.StatusForbidden,
+						Response:   appresponse.ErrorResponse{Message: "forbidden access"},
+					}, TrxKeys: trxKeys, Ok: false,
+				}
 			}
 		}
 
-		err = h.OrganizationService.Update(reqCtx, orgID, &orgReq)
+		err = h.OrganizationService.Update(reqCtx, orgID, &orgReq, currUID)
 		if err != nil {
 
 			_, errResp, apperr := appresponse.PrepareErr(err, helper.TraceCurrentFuncArgs(map[string]string{

@@ -120,24 +120,90 @@ func (h *HandlerImpl) Get() gin.HandlerFunc {
 func (h *HandlerImpl) List() gin.HandlerFunc {
 	return handler.HandlerResolver(func(c *gin.Context) handler.HandlerResponse {
 		ctx := c.Request.Context()
-		uFetched, err := h.OrganizationService.List(ctx)
-		if err != nil {
-			_, errResp, apperr := appresponse.PrepareErr(err, helper.TraceCurrentFuncArgs(map[string]string{}))
-			sc := http.StatusInternalServerError
+		currUser, ok := c.Get("user")
 
-			if apperr.Type == apperror.BadRequest || apperr.Type == apperror.NotFound {
+		if !ok {
+			return handler.HandlerResponse{
+				ResponseWrapper: appresponse.ResponseWrapper{
+					StatusCode: http.StatusBadRequest,
+					Response:   appresponse.ErrorResponse{Type: appresponse.THdlBadRequest, Message: "failed to extract user"},
+				}, Ok: false,
+			}
+		}
+
+		currUID := currUser.(*model.User).ID
+
+		getUser, err := h.UserService.Get(ctx, currUID)
+		if err != nil {
+
+			_, errResp, apperr := appresponse.PrepareErr(err, helper.TraceCurrentFuncArgs(map[string]string{
+				"current_user_id": currUID.String(),
+			}))
+
+			sc := http.StatusInternalServerError
+			if apperr.Type == apperror.BadRequest {
+				// h.log.Info(internalMsg)
 				sc = http.StatusBadRequest
 				errResp = appresponse.HdlRespBadRequest()
 			} else {
+				// h.log.Error(internalMsg)
 				sc = http.StatusInternalServerError
 				errResp = appresponse.HdlRespInternalServerError()
 			}
 
 			return handler.HandlerResponse{
+				Ctx: ctx,
 				ResponseWrapper: appresponse.ResponseWrapper{
 					StatusCode: sc,
 					Response:   errResp,
 				}, Ok: false,
+			}
+
+		}
+		var uFetched []model.Organization
+		if getUser.Role != model.TSUPERADMIN {
+
+			uFetched, err = h.OrganizationService.ListWhereCreatorID(ctx, currUID)
+			if err != nil {
+				_, errResp, apperr := appresponse.PrepareErr(err, helper.TraceCurrentFuncArgs(map[string]string{}))
+				sc := http.StatusInternalServerError
+
+				if apperr.Type == apperror.BadRequest || apperr.Type == apperror.NotFound {
+					sc = http.StatusBadRequest
+					errResp = appresponse.HdlRespBadRequest()
+				} else {
+					sc = http.StatusInternalServerError
+					errResp = appresponse.HdlRespInternalServerError()
+				}
+
+				return handler.HandlerResponse{
+					ResponseWrapper: appresponse.ResponseWrapper{
+						StatusCode: sc,
+						Response:   errResp,
+					}, Ok: false,
+				}
+			}
+
+		} else {
+			uFetched, err = h.OrganizationService.List(ctx)
+			if err != nil {
+				_, errResp, apperr := appresponse.PrepareErr(err, helper.TraceCurrentFuncArgs(map[string]string{}))
+				sc := http.StatusInternalServerError
+
+				if apperr.Type == apperror.BadRequest || apperr.Type == apperror.NotFound {
+					sc = http.StatusBadRequest
+					errResp = appresponse.HdlRespBadRequest()
+				} else {
+					sc = http.StatusInternalServerError
+					errResp = appresponse.HdlRespInternalServerError()
+				}
+
+				return handler.HandlerResponse{
+					ResponseWrapper: appresponse.ResponseWrapper{
+						StatusCode: sc,
+						Response:   errResp,
+					}, Ok: false,
+				}
 			}
 		}
 

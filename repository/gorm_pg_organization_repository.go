@@ -58,6 +58,23 @@ func (r *psqlOrganizationRepository) List(ctx context.Context) ([]model.Organiza
 	return orgs, nil
 }
 
+func (r *psqlOrganizationRepository) ListWhereCreatorID(ctx context.Context, creatorID uuid.UUID) ([]model.Organization, error) {
+	var dbContext *gorm.DB
+	// get db from context, if db doesnt exists then use the class db
+
+	dbContext = r.DB
+
+	var orgs []model.Organization
+	err := dbContext.WithContext(ctx).
+		Where("creator_id = ?", creatorID).
+		Find(&orgs).Error
+	if err != nil {
+		errMsg := fmt.Sprintf("%s", helper.TraceCurrentFuncArgs(nil))
+		return nil, apperror.NewRepoErrorMsg(err, errMsg)
+	}
+	return orgs, nil
+}
+
 func (r *psqlOrganizationRepository) FindByID(ctx context.Context, id uuid.UUID) (*model.Organization, error) {
 	var org model.Organization
 	var dbContext *gorm.DB
@@ -83,13 +100,11 @@ func (r *psqlOrganizationRepository) FindByID(ctx context.Context, id uuid.UUID)
 func (r *psqlOrganizationRepository) HardDelete(ctx context.Context, uid uuid.UUID) error {
 	var dbContext *gorm.DB
 	// get db from context, if db doesnt exists then use the class db
-	u := model.UserRecordFlagUpdate{
-		RecordFlag: model.RecDeleted,
-	}
+	u := model.Organization{}
 
 	dbContext = r.DB
-
-	err := dbContext.WithContext(ctx).
+	fmt.Println("deleting org")
+	err := dbContext.WithContext(ctx).Debug().
 		Where("id = ?", uid).
 		Delete(&u).Error
 	if err != nil {
