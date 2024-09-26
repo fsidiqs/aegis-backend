@@ -52,12 +52,15 @@ func main() {
 	defer ds.Close()
 
 	fmt.Println("Migrating data sources")
-	err = ds.DB.AutoMigrate(&model.User{}, &model.UserSession{}, &model.Organization{})
+	err = ds.DB.AutoMigrate(
+		&model.User{}, &model.UserSession{}, &model.Organization{},
+		&model.UserOTP{},
+	)
 	if err != nil {
 		log.Fatalf("Unable to migrate data sources: %v\n", err)
 	}
 	// initialize mailer
-	mailer, err := initMailer()
+	mailer, err := initMailersend()
 	if err != nil {
 		log.Fatalf("Unable to initialize Mailer: %v\n", err)
 	}

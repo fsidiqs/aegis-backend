@@ -14,6 +14,7 @@ import (
 	"github.com/fsidiqs/aegis-backend/handler/middleware"
 	"github.com/fsidiqs/aegis-backend/handler/organizationhandler"
 	"github.com/fsidiqs/aegis-backend/handler/userhandler"
+	"github.com/fsidiqs/aegis-backend/mail"
 	"github.com/fsidiqs/aegis-backend/service/tokenservice"
 
 	"github.com/fsidiqs/aegis-backend/repository"
@@ -28,7 +29,7 @@ import (
 // which inject into service layer
 // which inject into handler layer
 
-func inject(d *db.DataSources, m *mailer) (*gin.Engine, error) {
+func inject(d *db.DataSources, m mail.IMailClient) (*gin.Engine, error) {
 	// baseLogger := logservice.NewLogger(&logservice.LogWriter{}, log.Ldate|log.Ltime)
 
 	log.Println("Injecting data sources")
@@ -89,7 +90,7 @@ func inject(d *db.DataSources, m *mailer) (*gin.Engine, error) {
 		&service.USConfig{
 			UserRepository: userRepository,
 			// RedisRepository: redisRepository,
-			MailClient: m.client,
+			MailClient: m,
 			USVerificationConfig: service.USVerificationConfig{
 				// EmailVerificationTokenSecret: emailVerifTokSecret,
 				// EmailTokenExpirationSecs:     emailVerifExp,
@@ -212,7 +213,7 @@ func inject(d *db.DataSources, m *mailer) (*gin.Engine, error) {
 		// PromoService:            promoService,
 		// UserPointHistoryService: userPointHistoryService,
 		PublicTokenService: publicTokenService,
-		MailClient:         m.client,
+		MailClient:         m,
 		// ActivityLogService:      activityLogService,
 		BaseURL: baseURL,
 		// FirebaseAuth:            fAuthClient,

@@ -12,7 +12,7 @@ type mailer struct {
 	client mail.IMailClient
 }
 
-func initMailer() (*mailer, error) {
+func initMailer() (mail.IMailClient, error) {
 	var err error
 	var appDomain, apiKey, fromName, fromEmail, port, apiUrl string
 	var mailerClient mail.IMailClient
@@ -37,7 +37,31 @@ func initMailer() (*mailer, error) {
 	}
 	log.Printf("mailer has created")
 
-	return &mailer{
-		client: mailerClient,
-	}, nil
+	return mailerClient, nil
+}
+
+func initSendgridMailer() (mail.IMailClient, error) {
+	apiKey := os.Getenv("SENDGRID_API_KEY")
+	fromName := os.Getenv("MAIL_FROM_NAME")
+	fromEmail := os.Getenv("MAIL_FROM_EMAIL")
+	fmt.Println("Initializing mailer\n")
+	fmt.Println("apiKey: ", apiKey)
+	mailerClient, err := mail.NewSendGridMailable(apiKey, fromEmail, fromName)
+	if err != nil {
+		return nil, err
+	}
+	return mailerClient, nil
+}
+
+func initMailersend() (mail.IMailClient, error) {
+	apiKey := os.Getenv("MAILERSEND_API_KEY")
+	fromName := os.Getenv("MAIL_FROM_NAME")
+	fromEmail := os.Getenv("MAIL_FROM_EMAIL")
+	fmt.Println("Initializing mailer\n")
+	fmt.Println("apiKey: ", apiKey)
+	mailerClient, err := mail.NewMailersendMailable(apiKey, fromEmail, fromName)
+	if err != nil {
+		return nil, err
+	}
+	return mailerClient, nil
 }

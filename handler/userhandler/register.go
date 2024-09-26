@@ -9,6 +9,7 @@ import (
 	"github.com/fsidiqs/aegis-backend/model/apperror"
 	"github.com/fsidiqs/aegis-backend/model/appresponse"
 	"github.com/gin-gonic/gin"
+	"github.com/kr/pretty"
 )
 
 func (h *HandlerImpl) Register() gin.HandlerFunc {
@@ -66,7 +67,7 @@ func (h *HandlerImpl) Register() gin.HandlerFunc {
 				}, TrxKeys: trxKeys, Ok: false,
 			}
 		}
-
+		pretty.Println("request", u)
 		_, _, err = h.UserService.Register(reqCtx, *u)
 		if err != nil {
 			_, errResp, apperr := appresponse.PrepareErr(err, helper.TraceCurrentFuncArgs(ureq))
@@ -95,6 +96,7 @@ func (h *HandlerImpl) Register() gin.HandlerFunc {
 		}
 
 		// err = h.MailClient.SendEmailVerification(context.Background(), otp.OTP, userCreated.Email)
+		err = h.MailClient.SendAccountCreatedMail(reqCtx, ureq.Password, u.Email)
 		return handler.HandlerResponse{
 			Ctx: reqCtx,
 			ResponseWrapper: appresponse.ResponseWrapper{

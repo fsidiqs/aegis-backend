@@ -11,5 +11,6 @@ const apiUrlMailchimpSendEmailFromTemplate string = "https://mandrillapp.com/api
 type IMailClient interface {
 	// SendEmailVerification(ctx context.Context, tokenstring string, recipient string) error
 	SendForgotPasswordOTP(ctx context.Context, otp string, recipient string) error
+	SendAccountCreatedMail(ctx context.Context, password string, recipient string) error
 	// SendOnboardingGreeting(ctx context.Context, recipient string) error
 }

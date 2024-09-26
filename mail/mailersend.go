@@ -8,30 +8,32 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+
+	"github.com/mailersend/mailersend-go"
 )
 
-type mailchimpImpl struct {
+type mailersendImpl struct {
+	mailersendClient    *mailersend.Mailersend
 	fromEmail           string
 	fromName            string
-	api                 string
 	apiKey              string
 	onboardingFromEmail string
 	onboardingFromName  string
 }
 
-func NewMailChimpMailable(apiKey string, fromEmail string, fromName string, api string) (IMailClient, error) {
-	mail := &mailchimpImpl{
-		fromEmail:           fromEmail,
-		fromName:            fromName,
-		apiKey:              apiKey,
-		api:                 api,
-		onboardingFromEmail: "temanmindy@mindtera.com",
-		onboardingFromName:  "Teman Mindy",
+func NewMailersendMailable(apiKey string, fromEmail string, fromName string) (IMailClient, error) {
+	ms := mailersend.NewMailersend(apiKey)
+
+	mail := &mailersendImpl{
+		mailersendClient: ms,
+		fromEmail:        fromEmail,
+		fromName:         fromName,
+		apiKey:           apiKey,
 	}
 	return mail, nil
 }
 
-func (m *mailchimpImpl) makeMailchimpMail(html string, plainTextContent string, subject string, recipients []map[string]interface{}) []byte {
+func (m *mailersendImpl) makeMailchimpMail(html string, plainTextContent string, subject string, recipients []map[string]interface{}) []byte {
 	message := map[string]interface{}{
 		"html":                     html,
 		"text":                     plainTextContent,
@@ -69,7 +71,7 @@ func (m *mailchimpImpl) makeMailchimpMail(html string, plainTextContent string, 
 	return reqBody
 }
 
-func (m *mailchimpImpl) makeMailChimpFromTemplate(recipients []map[string]interface{}) []byte {
+func (m *mailersendImpl) makeMailChimpFromTemplate(recipients []map[string]interface{}) []byte {
 	message := map[string]interface{}{
 		// "text":         plainTextContent,
 		"subject":      "Yeay! Selamat Bergabung di Mindtera!",
@@ -92,7 +94,7 @@ func (m *mailchimpImpl) makeMailChimpFromTemplate(recipients []map[string]interf
 	return reqBody
 }
 
-// func (m *mailchimpImpl) SendEmailVerification(ctx context.Context, otp, recipient string) error {
+// func (m *mailersendImpl) SendEmailVerification(ctx context.Context, otp, recipient string) error {
 // 	htmlContent := fmt.Sprintf("<p>Kode OTP verifikasi akun Anda adalah %v</p>", otp)
 // 	plainTextContent := fmt.Sprintf("Kode OTP verifikasi akun Anda adalah %v", otp)
 // 	subject := "[MINDTERA] Kode Verifikasi Akun"
@@ -117,7 +119,7 @@ func (m *mailchimpImpl) makeMailChimpFromTemplate(recipients []map[string]interf
 // 	return nil
 // }
 
-func (m *mailchimpImpl) SendOnboardingGreeting(ctx context.Context, recipient string) error {
+func (m *mailersendImpl) SendOnboardingGreeting(ctx context.Context, recipient string) error {
 	recipients := []map[string]interface{}{
 		{
 			"email": recipient,
@@ -139,51 +141,86 @@ func (m *mailchimpImpl) SendOnboardingGreeting(ctx context.Context, recipient st
 	return nil
 }
 
-func (m *mailchimpImpl) SendForgotPasswordOTP(ctx context.Context, otp, recipient string) error {
+func (m *mailersendImpl) SendForgotPasswordOTP(ctx context.Context, otp, recipient string) error {
 	htmlContent := fmt.Sprintf("<p>Kode OTP reset password Anda adalah %v</p>", otp)
 	plainTextContent := fmt.Sprintf("Kode OTP reset password Anda adalah %v", otp)
-	subject := "[MINDTERA] Kode Verifikasi Reset Password"
-	recipients := []map[string]interface{}{
+	subject := "[AEGIS-BACKEND-TEST] Kode Verifikasi Reset Password"
+	// reqBody := m.makeMailchimpMail(htmlContent, plainTextContent, subject, recipients)
+
+	// _, err := http.Post(apiUrlMailchimpSendEmail, applicationJsonContentType, bytes.NewBuffer(reqBody))
+	// if err != nil {
+	// 	log.Printf("failed to send forgot_password email:%v \n", err)
+	// 	return err
+	// }
+	// fromEmail := mail.NewEmail(m.fromName, m.fromEmail)
+	fromEmail := mailersend.From{
+		Name:  m.fromName,
+		Email: m.fromEmail,
+	}
+
+	recipientsEmail := []mailersend.Recipient{
 		{
-			"email": recipient,
+			Name:  recipient,
+			Email: recipient,
 		},
 	}
-	reqBody := m.makeMailchimpMail(htmlContent, plainTextContent, subject, recipients)
 
-	_, err := http.Post(apiUrlMailchimpSendEmail, applicationJsonContentType, bytes.NewBuffer(reqBody))
-	if err != nil {
-		log.Printf("failed to send forgot_password email:%v \n", err)
-		return err
-	}
+	message := m.mailersendClient.Email.NewMessage()
 
+	message.SetFrom(fromEmail)
+	message.SetRecipients(recipientsEmail)
+	message.SetSubject(subject)
+	message.SetHTML(htmlContent)
+	message.SetText(plainTextContent)
+	// message.SetSubstitutions(variables)
+	// message.SetTags(tags)
+
+	res, _ := m.mailersendClient.Email.Send(ctx, message)
+
+	fmt.Printf(res.Header.Get("X-Message-Id"))
 	return nil
 }
 
-func (m *mailchimpImpl) SendAccountCreatedMail(ctx context.Context, password string, recipient string) error {
+func (m *mailersendImpl) SendAccountCreatedMail(ctx context.Context, password string, recipient string) error {
 	htmlContent := fmt.Sprintf("<p>Hai %s, password Anda adalah %v</p>", recipient, password)
 	plainTextContent := fmt.Sprintf("Hai %s, password Anda adalah %v", recipient, password)
 	subject := "[AEGIS-BACKEND-TEST] Akun Telah Dibuat"
-	recipients := []map[string]interface{}{
+	// reqBody := m.makeMailchimpMail(htmlContent, plainTextContent, subject, recipients)
+
+	// _, err := http.Post(apiUrlMailchimpSendEmail, applicationJsonContentType, bytes.NewBuffer(reqBody))
+	// if err != nil {
+	// 	log.Printf("failed to send forgot_password email:%v \n", err)
+	// 	return err
+	// }
+	fromEmail := mailersend.From{
+		Name:  m.fromName,
+		Email: m.fromEmail,
+	}
+
+	recipientsEmail := []mailersend.Recipient{
 		{
-			"email": recipient,
+			Name:  recipient,
+			Email: recipient,
 		},
 	}
-	reqBody := m.makeMailchimpMail(htmlContent, plainTextContent, subject, recipients)
 
-	response, err := http.Post(apiUrlMailchimpSendEmail, applicationJsonContentType, bytes.NewBuffer(reqBody))
+	message := m.mailersendClient.Email.NewMessage()
+
+	message.SetFrom(fromEmail)
+	message.SetRecipients(recipientsEmail)
+	message.SetSubject(subject)
+	message.SetHTML(htmlContent)
+	message.SetText(plainTextContent)
+	// message.SetSubstitutions(variables)
+	// message.SetTags(tags)
+
+	res, err := m.mailersendClient.Email.Send(ctx, message)
 	if err != nil {
 		log.Printf("failed to send forgot_password email:%v \n", err)
 		return err
 	}
-
-	respBody, _ := ioutil.ReadAll(response.Body)
-	var parsedResp interface{}
-	err = json.Unmarshal(respBody, &parsedResp)
-	if err != nil {
-		log.Printf("failed to parse email:%v \n", err)
-	}
-
-	fmt.Println("parsedResp: ", parsedResp)
-
+	fmt.Println("res")
+	fmt.Println(res)
+	fmt.Printf(res.Header.Get("X-Message-Id"))
 	return nil
 }

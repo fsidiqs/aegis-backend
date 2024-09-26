@@ -8,30 +8,33 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+
+	"github.com/sendgrid/sendgrid-go"
+	"github.com/sendgrid/sendgrid-go/helpers/mail"
 )
 
-type mailchimpImpl struct {
+type sendgridImpl struct {
+	sendGridClient      *sendgrid.Client
 	fromEmail           string
 	fromName            string
-	api                 string
 	apiKey              string
 	onboardingFromEmail string
 	onboardingFromName  string
 }
 
-func NewMailChimpMailable(apiKey string, fromEmail string, fromName string, api string) (IMailClient, error) {
-	mail := &mailchimpImpl{
-		fromEmail:           fromEmail,
-		fromName:            fromName,
-		apiKey:              apiKey,
-		api:                 api,
-		onboardingFromEmail: "temanmindy@mindtera.com",
-		onboardingFromName:  "Teman Mindy",
+func NewSendGridMailable(apiKey string, fromEmail string, fromName string) (IMailClient, error) {
+	client := sendgrid.NewSendClient(apiKey)
+
+	mail := &sendgridImpl{
+		sendGridClient: client,
+		fromEmail:      fromEmail,
+		fromName:       fromName,
+		apiKey:         apiKey,
 	}
 	return mail, nil
 }
 
-func (m *mailchimpImpl) makeMailchimpMail(html string, plainTextContent string, subject string, recipients []map[string]interface{}) []byte {
+func (m *sendgridImpl) makeMailchimpMail(html string, plainTextContent string, subject string, recipients []map[string]interface{}) []byte {
 	message := map[string]interface{}{
 		"html":                     html,
 		"text":                     plainTextContent,
@@ -69,7 +72,7 @@ func (m *mailchimpImpl) makeMailchimpMail(html string, plainTextContent string, 
 	return reqBody
 }
 
-func (m *mailchimpImpl) makeMailChimpFromTemplate(recipients []map[string]interface{}) []byte {
+func (m *sendgridImpl) makeMailChimpFromTemplate(recipients []map[string]interface{}) []byte {
 	message := map[string]interface{}{
 		// "text":         plainTextContent,
 		"subject":      "Yeay! Selamat Bergabung di Mindtera!",
@@ -92,7 +95,7 @@ func (m *mailchimpImpl) makeMailChimpFromTemplate(recipients []map[string]interf
 	return reqBody
 }
 
-// func (m *mailchimpImpl) SendEmailVerification(ctx context.Context, otp, recipient string) error {
+// func (m *sendgridImpl) SendEmailVerification(ctx context.Context, otp, recipient string) error {
 // 	htmlContent := fmt.Sprintf("<p>Kode OTP verifikasi akun Anda adalah %v</p>", otp)
 // 	plainTextContent := fmt.Sprintf("Kode OTP verifikasi akun Anda adalah %v", otp)
 // 	subject := "[MINDTERA] Kode Verifikasi Akun"
@@ -117,7 +120,7 @@ func (m *mailchimpImpl) makeMailChimpFromTemplate(recipients []map[string]interf
 // 	return nil
 // }
 
-func (m *mailchimpImpl) SendOnboardingGreeting(ctx context.Context, recipient string) error {
+func (m *sendgridImpl) SendOnboardingGreeting(ctx context.Context, recipient string) error {
 	recipients := []map[string]interface{}{
 		{
 			"email": recipient,
@@ -139,51 +142,60 @@ func (m *mailchimpImpl) SendOnboardingGreeting(ctx context.Context, recipient st
 	return nil
 }
 
-func (m *mailchimpImpl) SendForgotPasswordOTP(ctx context.Context, otp, recipient string) error {
+func (m *sendgridImpl) SendForgotPasswordOTP(ctx context.Context, otp, recipient string) error {
 	htmlContent := fmt.Sprintf("<p>Kode OTP reset password Anda adalah %v</p>", otp)
 	plainTextContent := fmt.Sprintf("Kode OTP reset password Anda adalah %v", otp)
-	subject := "[MINDTERA] Kode Verifikasi Reset Password"
-	recipients := []map[string]interface{}{
-		{
-			"email": recipient,
-		},
-	}
-	reqBody := m.makeMailchimpMail(htmlContent, plainTextContent, subject, recipients)
+	subject := "[AEGIS-BACKEND-TEST] Kode Verifikasi Reset Password"
+	// reqBody := m.makeMailchimpMail(htmlContent, plainTextContent, subject, recipients)
 
-	_, err := http.Post(apiUrlMailchimpSendEmail, applicationJsonContentType, bytes.NewBuffer(reqBody))
+	// _, err := http.Post(apiUrlMailchimpSendEmail, applicationJsonContentType, bytes.NewBuffer(reqBody))
+	// if err != nil {
+	// 	log.Printf("failed to send forgot_password email:%v \n", err)
+	// 	return err
+	// }
+	fromEmail := mail.NewEmail(m.fromName, m.fromEmail)
+	recipientEmail := mail.NewEmail(recipient, recipient)
+	message := mail.NewSingleEmail(
+		fromEmail,
+		subject,
+		recipientEmail,
+		plainTextContent,
+		htmlContent,
+	)
+	response, err := m.sendGridClient.Send(message)
 	if err != nil {
 		log.Printf("failed to send forgot_password email:%v \n", err)
 		return err
 	}
-
+	log.Printf("response: %v", response)
 	return nil
 }
 
-func (m *mailchimpImpl) SendAccountCreatedMail(ctx context.Context, password string, recipient string) error {
+func (m *sendgridImpl) SendAccountCreatedMail(ctx context.Context, password string, recipient string) error {
 	htmlContent := fmt.Sprintf("<p>Hai %s, password Anda adalah %v</p>", recipient, password)
 	plainTextContent := fmt.Sprintf("Hai %s, password Anda adalah %v", recipient, password)
 	subject := "[AEGIS-BACKEND-TEST] Akun Telah Dibuat"
-	recipients := []map[string]interface{}{
-		{
-			"email": recipient,
-		},
-	}
-	reqBody := m.makeMailchimpMail(htmlContent, plainTextContent, subject, recipients)
+	// reqBody := m.makeMailchimpMail(htmlContent, plainTextContent, subject, recipients)
 
-	response, err := http.Post(apiUrlMailchimpSendEmail, applicationJsonContentType, bytes.NewBuffer(reqBody))
+	// _, err := http.Post(apiUrlMailchimpSendEmail, applicationJsonContentType, bytes.NewBuffer(reqBody))
+	// if err != nil {
+	// 	log.Printf("failed to send forgot_password email:%v \n", err)
+	// 	return err
+	// }
+	fromEmail := mail.NewEmail(m.fromName, m.fromEmail)
+	recipientEmail := mail.NewEmail(recipient, recipient)
+	message := mail.NewSingleEmail(
+		fromEmail,
+		subject,
+		recipientEmail,
+		plainTextContent,
+		htmlContent,
+	)
+	response, err := m.sendGridClient.Send(message)
 	if err != nil {
 		log.Printf("failed to send forgot_password email:%v \n", err)
 		return err
 	}
-
-	respBody, _ := ioutil.ReadAll(response.Body)
-	var parsedResp interface{}
-	err = json.Unmarshal(respBody, &parsedResp)
-	if err != nil {
-		log.Printf("failed to parse email:%v \n", err)
-	}
-
-	fmt.Println("parsedResp: ", parsedResp)
-
+	log.Printf("response: %v", response)
 	return nil
 }
