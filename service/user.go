@@ -258,9 +258,9 @@ func (s *userService) UpdatePasswordUsingEmailAndOTP(ctx context.Context, email 
 
 	// tell client if the user otp has been used (soft delete)
 	// tell client that otp status must be "VERIFIED"
-	if uOTP.RecordFlag == model.RecDeleted || uOTP.Status != model.TOTPVerified {
-		return nil, apperror.NewResourceNotFound()
-	}
+	// if uOTP.RecordFlag == model.RecDeleted || uOTP.Status != model.TOTPVerified {
+	// 	return nil, apperror.NewResourceNotFound()
+	// }
 
 	now := time.Now()
 	// if uFetch.AccountType == model.TUserUnverified {

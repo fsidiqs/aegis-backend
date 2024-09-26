@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/fsidiqs/aegis-backend/db"
 	"github.com/fsidiqs/aegis-backend/helper"
@@ -10,6 +11,7 @@ import (
 	"github.com/fsidiqs/aegis-backend/model"
 	"github.com/fsidiqs/aegis-backend/model/apperror"
 	"github.com/google/uuid"
+	"github.com/kr/pretty"
 
 	"gorm.io/gorm"
 )
@@ -186,7 +188,7 @@ func (r *psqlUserRepository) Update(ctx context.Context, uid uuid.UUID, u *model
 }
 
 func (r *psqlUserRepository) UpdatePassword(ctx context.Context, uid uuid.UUID, u model.UserPasswordUpdate) error {
-	err := r.DB.WithContext(ctx).
+	err := r.DB.WithContext(ctx).Debug().
 		Where(queryhelper.ActiveFlag).
 		Where("id = ?", uid).
 		Updates(u).
@@ -409,39 +411,40 @@ func (r *psqlUserRepository) FindOTP(ctx context.Context, userID uuid.UUID, otp 
 }
 
 func (r *psqlUserRepository) UpsertOTP(ctx context.Context, userID string, uOTP model.UserOTP) error {
-	// var err error
+	var err error
 
-	// var dbContext *gorm.DB
-	// get db from context, if db doesnt exists then use the class db
-	// if userDBCtx := ctx.Value(db.DBTrxUserKey); userDBCtx != nil {
-	// 	dbContext = userDBCtx.(*gorm.DB)
-	// } else {
-	// 	dbContext = r.DB
-	// }
+	var dbContext *gorm.DB
+	if userDBCtx := ctx.Value(db.DBTrxUserKey); userDBCtx != nil {
+		dbContext = userDBCtx.(*gorm.DB)
+	} else {
+		dbContext = r.DB
+	}
 
-	// now := time.Now()
-	// uOTPUpdate := model.UserOTPUpdate{
-	// 	OTP:       uOTP.OTP,
-	// 	Type:      uOTP.Type,
-	// 	Status:    uOTP.Status,
-	// 	ExpiredAt: uOTP.ExpiredAt,
-	// 	DefaultColumns: model.DefaultColumns{
-	// 		UpdatedAt: &now,
-	// 		UpdatedBy: helper.TraceCurrentFunc(),
-	// 	},
-	// }
-	// if dbContext.Model(&model.UserOTPUpdate{}).Where("user_id = ? AND type = ?", userID, uOTP.Type).Updates(&uOTPUpdate).RowsAffected == 0 {
-	// 	err = dbContext.Create(&uOTP).Error
-	// 	if err != nil {
-	// 		errMsg := fmt.Sprintf("%s", helper.TraceCurrentFuncArgs(
-	// 			map[string]string{
-	// 				"user_id": userID,
-	// 			},
-	// 			uOTP,
-	// 		))
-	// 		return apperror.NewRepoErrorMsg(err, errMsg)
-	// 	}
-	// }
+	now := time.Now()
+	uOTPUpdate := model.UserOTPUpdate{
+		OTP:       uOTP.OTP,
+		Type:      uOTP.Type,
+		Status:    uOTP.Status,
+		ExpiredAt: uOTP.ExpiredAt,
+		DefaultColumns: model.DefaultColumns{
+			UpdatedAt: &now,
+			UpdatedBy: helper.TraceCurrentFunc(),
+		},
+	}
+
+	pretty.Println("uOTPUpdate: ", uOTPUpdate)
+	if dbContext.Debug().Model(&model.UserOTPUpdate{}).Where("user_id = ? AND type = ?", userID, uOTP.Type).Updates(&uOTPUpdate).RowsAffected == 0 {
+		err = dbContext.Create(&uOTP).Error
+		if err != nil {
+			errMsg := fmt.Sprintf("%s", helper.TraceCurrentFuncArgs(
+				map[string]string{
+					"user_id": userID,
+				},
+				uOTP,
+			))
+			return apperror.NewRepoErrorMsg(err, errMsg)
+		}
+	}
 	return nil
 }
 
